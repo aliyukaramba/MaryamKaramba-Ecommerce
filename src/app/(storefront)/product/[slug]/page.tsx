@@ -9,6 +9,8 @@ import { BuyOnWhatsAppModal } from "@/components/storefront/buy-on-whatsapp-moda
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductView } from "@/actions/product";
 
+export const dynamic = "force-dynamic";
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }

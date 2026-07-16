@@ -5,6 +5,8 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { ShopFilters } from "@/components/storefront/shop-filters";
 import { Input } from "@/components/ui/input";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Shop",
   description: "Browse the full catalog and order instantly on WhatsApp.",

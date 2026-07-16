@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/storefront/product-card";
 
+export const dynamic = "force-dynamic";
+
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
 }

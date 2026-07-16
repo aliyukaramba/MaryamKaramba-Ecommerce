@@ -8,26 +8,33 @@ import { ProductCard } from "@/components/storefront/product-card";
 export const revalidate = 60;
 
 async function getHomeData() {
-  const [homepage, featured, trending, newArrivals] = await Promise.all([
-    prisma.homepageSettings.findFirst(),
-    prisma.product.findMany({
-      where: { status: "PUBLISHED", isFeatured: true },
-      take: 4,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.findMany({
-      where: { status: "PUBLISHED", isTrending: true },
-      take: 4,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.findMany({
-      where: { status: "PUBLISHED", isNewArrival: true },
-      take: 4,
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  try {
+    const [homepage, featured, trending, newArrivals] = await Promise.all([
+      prisma.homepageSettings.findFirst(),
+      prisma.product.findMany({
+        where: { status: "PUBLISHED", isFeatured: true },
+        take: 4,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.product.findMany({
+        where: { status: "PUBLISHED", isTrending: true },
+        take: 4,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.product.findMany({
+        where: { status: "PUBLISHED", isNewArrival: true },
+        take: 4,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
-  return { homepage, featured, trending, newArrivals };
+    return { homepage, featured, trending, newArrivals };
+  } catch (error) {
+    // Never let a DB hiccup at build/render time take down the homepage —
+    // render with empty sections instead of a hard crash.
+    console.error("getHomeData failed, rendering with empty sections:", error);
+    return { homepage: null, featured: [], trending: [], newArrivals: [] };
+  }
 }
 
 export default async function HomePage() {

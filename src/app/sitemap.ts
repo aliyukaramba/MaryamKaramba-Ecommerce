@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
+// Query the live catalog on every request instead of baking a snapshot in
+// at build time — this also means the build doesn't need DB access.
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

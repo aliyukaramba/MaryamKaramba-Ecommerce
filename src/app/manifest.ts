@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const settings = await prisma.businessSettings.findFirst().catch(() => null);
   const name = settings?.businessName ?? "Your Store";
