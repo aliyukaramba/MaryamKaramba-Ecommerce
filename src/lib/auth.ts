@@ -1,12 +1,22 @@
 import NextAuth from "next-auth";
+import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations/auth";
 
+// @auth/prisma-adapter and next-auth each resolve their own copy of
+// @auth/core in some npm dependency trees (a long-standing next-auth v5
+// beta + adapter issue). The two copies are structurally identical at
+// runtime but TypeScript treats them as distinct types, which breaks the
+// `adapter` option's type-check. Casting through `Adapter` from
+// "next-auth/adapters" (the type next-auth itself expects) sidesteps the
+// mismatch without depending on npm's dependency resolution being exact.
+const adapter = PrismaAdapter(prisma) as unknown as Adapter;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",
