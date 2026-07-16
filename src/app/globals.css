@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ---- Warm stone / bottle-green / antique brass token system ---- */
+    --background: 40 26% 92%;         /* warm stone */
+    --foreground: 152 22% 10%;        /* deep bottle-green ink */
+
+    --card: 40 30% 96%;
+    --card-foreground: 152 22% 10%;
+
+    --popover: 40 30% 97%;
+    --popover-foreground: 152 22% 10%;
+
+    --primary: 152 40% 16%;           /* bottle green */
+    --primary-foreground: 42 40% 96%;
+
+    --secondary: 34 22% 86%;          /* soft sand */
+    --secondary-foreground: 152 22% 10%;
+
+    --muted: 38 18% 88%;
+    --muted-foreground: 152 8% 38%;
+
+    --accent: 38 55% 42%;             /* antique brass */
+    --accent-foreground: 42 40% 97%;
+
+    --destructive: 6 65% 42%;
+    --destructive-foreground: 42 40% 97%;
+
+    --border: 38 18% 82%;
+    --input: 38 18% 82%;
+    --ring: 152 40% 16%;
+
+    --radius: 0.85rem;
+  }
+
+  .dark {
+    --background: 152 20% 7%;
+    --foreground: 42 30% 92%;
+
+    --card: 152 18% 10%;
+    --card-foreground: 42 30% 92%;
+
+    --popover: 152 18% 10%;
+    --popover-foreground: 42 30% 92%;
+
+    --primary: 42 40% 88%;
+    --primary-foreground: 152 22% 10%;
+
+    --secondary: 152 14% 15%;
+    --secondary-foreground: 42 30% 92%;
+
+    --muted: 152 12% 15%;
+    --muted-foreground: 42 12% 65%;
+
+    --accent: 38 60% 55%;
+    --accent-foreground: 152 22% 8%;
+
+    --destructive: 6 60% 50%;
+    --destructive-foreground: 42 30% 95%;
+
+    --border: 152 12% 18%;
+    --input: 152 12% 18%;
+    --ring: 42 40% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), serif;
+  }
+  .font-body {
+    font-family: var(--font-body), sans-serif;
+  }
+  .font-data {
+    font-family: var(--font-data), monospace;
+  }
+
+  /* Signature element: a speech-bubble "tail" notch, used sparingly —
+     the visual echo of "this ends in a conversation". */
+  .chat-tail {
+    position: relative;
+  }
+  .chat-tail::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: inherit;
+    bottom: -6px;
+    left: 22px;
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+    border-bottom-left-radius: 3px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
