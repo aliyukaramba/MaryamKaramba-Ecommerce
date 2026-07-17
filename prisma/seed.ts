@@ -33,7 +33,7 @@ async function main() {
         businessName: "amazstore.shop",
         whatsappNumber: process.env.WHATSAPP_NUMBER ?? "2348012345678",
         businessEmail: "hello@yourdomain.com",
-        address: "Lagos, Nigeria",
+        address: "Bauchi, Nigeria",
         currency: "NGN",
         currencySymbol: "₦",
         timezone: "Africa/Lagos",
