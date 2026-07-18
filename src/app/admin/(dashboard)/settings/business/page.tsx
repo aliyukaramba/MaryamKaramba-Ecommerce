@@ -1,9 +1,19 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BusinessSettingsForm } from "@/components/admin/business-settings-form";
 
 export const metadata = { title: "Business Settings" };
 
 export default async function BusinessSettingsPage() {
+  const session = await auth();
+  // Enforced here rather than in Edge middleware, where role resolution
+  // proved unreliable in this environment. This runs in the standard
+  // Node.js runtime, same as everywhere else role checks work correctly.
+  if (session?.user?.role !== "SUPER_ADMIN") {
+    redirect("/admin");
+  }
+
   const settings = await prisma.businessSettings.findFirst();
 
   return (

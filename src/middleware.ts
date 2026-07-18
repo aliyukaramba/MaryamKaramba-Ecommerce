@@ -1,18 +1,25 @@
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { authConfig } from "@/lib/auth.config";
 
-// This reads the JWT session cookie directly, rather than going through
-// the wrapped `auth()` middleware HOC (which re-runs a second, separate
-// NextAuth() instance's full session pipeline). getToken() is the
-// lower-level, Edge-reliable way to check auth + custom claims (like
-// role) in middleware specifically — it decodes the cookie once, with
-// no dependency on a second callback pipeline potentially resolving
-// role differently than the main app's session does.
+// Middleware only checks whether the visitor is logged in at all — it
+// does NOT attempt any role-based restriction. Role-specific access
+// control (SUPER_ADMIN-only pages) is enforced directly in those pages'
+// Server Components instead, where session/role resolution has been
+// confirmed to work reliably. Two different approaches to reading the
+// JWT in Edge middleware (the wrapped auth() HOC, and getToken()
+// directly) both proved unreliable for the role field specifically in
+// this environment — one silently misread the role, the other crashed
+// outright. Keeping middleware to the simple, well-tested "logged in or
+// not" check avoids that whole class of Edge-runtime risk, since a
+// middleware crash takes down every admin route at once.
+const { auth } = NextAuth(authConfig);
+
 const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
 
-export async function middleware(req: NextRequest) {
+export default auth((req) => {
   const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
   const isAdminRoute = nextUrl.pathname.startsWith("/admin");
   const isPublicAdminPath = PUBLIC_ADMIN_PATHS.some((p) =>
     nextUrl.pathname.startsWith(p)
@@ -22,27 +29,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-  const isLoggedIn = !!token;
-
   if (!isLoggedIn) {
     const loginUrl = new URL("/admin/login", nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Only SUPER_ADMIN may manage users / business settings
-  const restrictedToSuperAdmin = ["/admin/users", "/admin/settings/business"];
-  const role = token.role as string | undefined;
-  if (
-    restrictedToSuperAdmin.some((p) => nextUrl.pathname.startsWith(p)) &&
-    role !== "SUPER_ADMIN"
-  ) {
-    return NextResponse.redirect(new URL("/admin", nextUrl.origin));
-  }
-
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/admin/:path*"],
