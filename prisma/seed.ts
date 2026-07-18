@@ -30,10 +30,10 @@ async function main() {
   if (!existingBusiness) {
     await prisma.businessSettings.create({
       data: {
-        businessName: "amazstore.shop",
+        businessName: "Your Store Name",
         whatsappNumber: process.env.WHATSAPP_NUMBER ?? "2348012345678",
         businessEmail: "hello@yourdomain.com",
-        address: "Bauchi, Nigeria",
+        address: "Lagos, Nigeria",
         currency: "NGN",
         currencySymbol: "₦",
         timezone: "Africa/Lagos",
