@@ -1,19 +1,18 @@
-import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import { authConfig } from "@/lib/auth.config";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-// Deliberately built from the Edge-safe authConfig only, NOT the full
-// auth.ts (which bundles the Prisma adapter). Middleware runs on the Edge
-// runtime, which can't run Prisma's Node client — importing the full
-// config here would pull that in and risk role/session data resolving
-// inconsistently between middleware and everywhere else.
-const { auth } = NextAuth(authConfig);
-
+// This reads the JWT session cookie directly, rather than going through
+// the wrapped `auth()` middleware HOC (which re-runs a second, separate
+// NextAuth() instance's full session pipeline). getToken() is the
+// lower-level, Edge-reliable way to check auth + custom claims (like
+// role) in middleware specifically — it decodes the cookie once, with
+// no dependency on a second callback pipeline potentially resolving
+// role differently than the main app's session does.
 const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
   const isAdminRoute = nextUrl.pathname.startsWith("/admin");
   const isPublicAdminPath = PUBLIC_ADMIN_PATHS.some((p) =>
     nextUrl.pathname.startsWith(p)
@@ -23,6 +22,9 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  const isLoggedIn = !!token;
+
   if (!isLoggedIn) {
     const loginUrl = new URL("/admin/login", nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
@@ -31,7 +33,7 @@ export default auth((req) => {
 
   // Only SUPER_ADMIN may manage users / business settings
   const restrictedToSuperAdmin = ["/admin/users", "/admin/settings/business"];
-  const role = req.auth?.user?.role;
+  const role = token.role as string | undefined;
   if (
     restrictedToSuperAdmin.some((p) => nextUrl.pathname.startsWith(p)) &&
     role !== "SUPER_ADMIN"
@@ -40,7 +42,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/admin/:path*"],
