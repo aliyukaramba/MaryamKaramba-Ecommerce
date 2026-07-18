@@ -1,5 +1,13 @@
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { authConfig } from "@/lib/auth.config";
+
+// Deliberately built from the Edge-safe authConfig only, NOT the full
+// auth.ts (which bundles the Prisma adapter). Middleware runs on the Edge
+// runtime, which can't run Prisma's Node client — importing the full
+// config here would pull that in and risk role/session data resolving
+// inconsistently between middleware and everywhere else.
+const { auth } = NextAuth(authConfig);
 
 const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
 

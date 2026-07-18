@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations/auth";
+import { authConfig } from "@/lib/auth.config";
 
 // @auth/prisma-adapter and next-auth each resolve their own copy of
 // @auth/core in some npm dependency trees (a long-standing next-auth v5
@@ -16,12 +17,8 @@ import { loginSchema } from "@/lib/validations/auth";
 const adapter = PrismaAdapter(prisma) as unknown as Adapter;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter,
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/admin/login",
-    error: "/admin/login",
-  },
   providers: [
     Credentials({
       name: "credentials",
@@ -54,21 +51,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as { role: string }).role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-      }
-      return session;
-    },
-  },
-  trustHost: true,
 });

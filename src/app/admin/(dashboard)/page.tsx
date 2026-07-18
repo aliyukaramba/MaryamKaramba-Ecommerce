@@ -52,7 +52,10 @@ async function getDashboardData() {
       where: { createdAt: { gte: thirtyDaysAgo } },
       select: { createdAt: true },
     }),
-    prisma.inquiry.aggregate({ _sum: { totalAmount: true } }),
+    prisma.inquiry.aggregate({
+      where: { status: "DELIVERED" },
+      _sum: { totalAmount: true },
+    }),
   ]);
 
   const lowStockProducts = publishedProductsForStockCheck
@@ -94,7 +97,7 @@ export default async function AdminDashboardPage() {
         <StatCard label="Total Inquiries" value={String(data.inquiryCount)} icon={MessagesSquare} accent />
         <StatCard label="Customers" value={String(data.customerCount)} icon={Users} />
         <StatCard
-          label="Total Order Value"
+          label="Delivered Order Value"
           value={formatCurrency(data.totalRevenue)}
           icon={TrendingUp}
         />

@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { BuyOnWhatsAppModal } from "@/components/storefront/buy-on-whatsapp-modal";
+import { ShareButton } from "@/components/storefront/share-button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductView } from "@/actions/product";
 
@@ -124,7 +125,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {product.isTrending && <Badge variant="outline">Trending</Badge>}
           </div>
 
-          <h1 className="font-display text-3xl md:text-4xl">{product.name}</h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="font-display text-3xl md:text-4xl">{product.name}</h1>
+            <ShareButton
+              title={product.name}
+              text={product.shortDescription ?? undefined}
+              url={`${siteUrl}/product/${product.slug}`}
+            />
+          </div>
 
           {product.brand && (
             <p className="text-sm text-muted-foreground">Brand: {product.brand}</p>
