@@ -25,6 +25,7 @@ export function AdminShell({
           onMenuClick={() => setSidebarOpen(true)}
           userName={userName}
           userEmail={userEmail}
+          role={role}
         />
         <main className="flex-1 bg-secondary/20 p-4 sm:p-6">{children}</main>
       </div>

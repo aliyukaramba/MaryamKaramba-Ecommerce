@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { Menu, Moon, Sun, LogOut, User } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -17,10 +18,12 @@ export function AdminTopbar({
   onMenuClick,
   userName,
   userEmail,
+  role,
 }: {
   onMenuClick: () => void;
   userName: string;
   userEmail: string;
+  role: string;
 }) {
   const { theme, setTheme } = useTheme();
 
@@ -32,6 +35,10 @@ export function AdminTopbar({
       <div className="hidden md:block" />
 
       <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="hidden sm:inline-flex">
+          {role.replace("_", " ")}
+        </Badge>
+
         <Button
           variant="ghost"
           size="icon"
@@ -52,6 +59,9 @@ export function AdminTopbar({
             <DropdownMenuLabel>
               <div className="font-medium text-foreground">{userName}</div>
               <div className="truncate text-xs">{userEmail}</div>
+              <div className="mt-1 text-xs font-data uppercase tracking-wide text-accent">
+                {role.replace("_", " ")}
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/admin/login" })}>
