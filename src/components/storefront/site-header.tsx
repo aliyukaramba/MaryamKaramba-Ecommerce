@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, MessageCircle } from "lucide-react";
+import Image from "next/image";
+import { Menu, X, MessageCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -13,15 +14,35 @@ const navLinks = [
   { href: "/faq", label: "FAQ" },
 ];
 
-export function SiteHeader({ businessName }: { businessName: string }) {
+export function SiteHeader({
+  businessName,
+  logo,
+}: {
+  businessName: string;
+  logo?: string | null;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="chat-tail flex items-center gap-2 font-display text-xl">
-          <MessageCircle className="h-5 w-5 text-accent" />
-          {businessName}
+          {logo ? (
+            <span className="relative block h-9 w-32">
+              <Image
+                src={logo}
+                alt={businessName}
+                fill
+                className="object-contain object-left"
+                priority
+              />
+            </span>
+          ) : (
+            <>
+              <MessageCircle className="h-5 w-5 text-accent" />
+              {businessName}
+            </>
+          )}
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm font-medium md:flex">
@@ -36,7 +57,14 @@ export function SiteHeader({ businessName }: { businessName: string }) {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-3 md:flex">
+          <Link
+            href="/account"
+            className="rounded-full p-2 text-foreground/80 hover:bg-secondary hover:text-foreground"
+            aria-label="My account"
+          >
+            <User className="h-5 w-5" />
+          </Link>
           <Button asChild size="sm">
             <Link href="/shop">Shop Now</Link>
           </Button>
@@ -63,6 +91,13 @@ export function SiteHeader({ businessName }: { businessName: string }) {
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/account"
+            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary"
+            onClick={() => setOpen(false)}
+          >
+            My Account
+          </Link>
         </nav>
       )}
     </header>

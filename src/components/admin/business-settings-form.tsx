@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SingleImageUploader } from "@/components/admin/single-image-uploader";
 import { updateBusinessSettings } from "@/actions/settings";
 
 interface BusinessSettingsFormProps {
@@ -32,7 +33,7 @@ interface BusinessSettingsFormProps {
 
 export function BusinessSettingsForm({ defaultValues }: BusinessSettingsFormProps) {
   const [submitting, setSubmitting] = useState(false);
-  const { register, handleSubmit } = useForm({ defaultValues });
+  const { register, control, handleSubmit } = useForm({ defaultValues });
 
   async function onSubmit(values: typeof defaultValues) {
     setSubmitting(true);
@@ -49,6 +50,44 @@ export function BusinessSettingsForm({ defaultValues }: BusinessSettingsFormProp
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
         <h2 className="font-medium">General</h2>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Logo</Label>
+            <Controller
+              name="logo"
+              control={control}
+              render={({ field }) => (
+                <SingleImageUploader
+                  label="Logo"
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown in the site header and footer. A wide, transparent PNG works best.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Favicon</Label>
+            <Controller
+              name="favicon"
+              control={control}
+              render={({ field }) => (
+                <SingleImageUploader
+                  label="Favicon"
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown in the browser tab. A square image works best.
+            </p>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="businessName">Business name</Label>

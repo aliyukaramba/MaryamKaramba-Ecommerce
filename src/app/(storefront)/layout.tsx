@@ -11,10 +11,11 @@ export default async function StorefrontLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader businessName={settings.businessName} />
+      <SiteHeader businessName={settings.businessName} logo={settings.logo} />
       <main className="flex-1">{children}</main>
       <SiteFooter
         businessName={settings.businessName}
+        logo={settings.logo}
         address={settings.address}
         businessEmail={settings.businessEmail}
         facebookUrl={settings.facebookUrl}

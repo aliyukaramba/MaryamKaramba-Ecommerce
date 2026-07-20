@@ -9,6 +9,7 @@ import { BuyOnWhatsAppModal } from "@/components/storefront/buy-on-whatsapp-moda
 import { ShareButton } from "@/components/storefront/share-button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductView } from "@/actions/product";
+import { getCurrentCustomerAccount } from "@/actions/customer-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -61,14 +62,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   incrementProductView(product.id).catch(() => {});
 
-  const related = await prisma.product.findMany({
-    where: {
-      status: "PUBLISHED",
-      categoryId: product.categoryId,
-      NOT: { id: product.id },
-    },
-    take: 4,
-  });
+  const [related, customerAccount] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        status: "PUBLISHED",
+        categoryId: product.categoryId,
+        NOT: { id: product.id },
+      },
+      take: 4,
+    }),
+    getCurrentCustomerAccount(),
+  ]);
 
   const price = Number(product.price);
   const salePrice = product.salePrice != null ? Number(product.salePrice) : null;
@@ -173,6 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 sku: v.sku,
               })),
             }}
+            initialAccount={customerAccount}
           />
 
           <div className="space-y-2 border-t border-border pt-5 text-sm">

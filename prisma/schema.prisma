@@ -251,6 +251,23 @@ model Inventory {
 // CUSTOMER / INQUIRY
 // ============================================================================
 
+model CustomerAccount {
+  id       String  @id @default(cuid())
+  phone    String  @unique
+  email    String? @unique
+  fullName String
+  password String
+
+  customers   Customer[]
+  pushTokens  PushToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phone])
+  @@map("customer_accounts")
+}
+
 model Customer {
   id              String  @id @default(cuid())
   fullName        String
@@ -260,12 +277,22 @@ model Customer {
   deliveryAddress String?
   notes           String? @db.Text
 
+  // Set only when the person placing this specific order was logged in as
+  // a registered account at the time. Guests leave this null. Each order
+  // still gets its own Customer snapshot row (preserving exactly what was
+  // entered at order time, consistent with how this app treats order
+  // history elsewhere) — this FK just links those snapshots back to a
+  // persistent account for order-history lookups.
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
+
   inquiries Inquiry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([phone])
+  @@index([customerAccountId])
   @@map("customers")
 }
 
@@ -411,4 +438,22 @@ model Newsletter {
   createdAt DateTime @default(now())
 
   @@map("newsletter_subscribers")
+}
+
+model PushToken {
+  id       String  @id @default(cuid())
+  token    String  @unique
+  platform String // "ios" | "android"
+
+  // Optional — a device can register a push token before ever logging in
+  // (e.g. to receive "new arrivals" broadcasts), and later get linked to
+  // an account once they log in on that device.
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerAccountId])
+  @@map("push_tokens")
 }

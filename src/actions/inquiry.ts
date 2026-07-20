@@ -9,6 +9,7 @@ import { generateInquiryNumber, buildWhatsAppMessage, buildWhatsAppLink } from "
 import { logActivity } from "@/lib/activity-log";
 import { formatCurrency } from "@/lib/utils";
 import { sendInquiryConfirmationEmail, sendAdminNotificationEmail } from "@/lib/email";
+import { getCustomerSession } from "@/lib/customer-session";
 
 export interface CreateInquiryResult {
   success: boolean;
@@ -121,6 +122,11 @@ export async function createInquiry(
 
     const grandTotal = resolvedItems.reduce((sum, i) => sum + i.totalPrice, 0);
 
+    // Read the logged-in customer's account id server-side from their
+    // session cookie — never accept this as client input, since that
+    // would let anyone attach an order to someone else's account.
+    const customerSession = await getCustomerSession();
+
     // ---- 5. Persist atomically: customer, inquiry, items, product counters ----
     const result = await prisma.$transaction(async (tx) => {
       const customer = await tx.customer.create({
@@ -131,6 +137,7 @@ export async function createInquiry(
           deliveryCity,
           deliveryAddress,
           notes,
+          customerAccountId: customerSession?.customerAccountId ?? null,
         },
       });
 

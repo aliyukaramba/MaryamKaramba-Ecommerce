@@ -3,6 +3,7 @@ import { cache } from "react";
 import { Newsreader, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { prisma } from "@/lib/prisma";
+import { CapacitorBridge } from "@/components/capacitor-bridge";
 import "./globals.css";
 
 const display = Newsreader({
@@ -87,6 +88,7 @@ export default async function RootLayout({
         />
         {children}
         <Toaster position="top-center" richColors closeButton />
+        <CapacitorBridge />
       </body>
     </html>
   );
