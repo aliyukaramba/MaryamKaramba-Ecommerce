@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { BuyOnWhatsAppModal } from "@/components/storefront/buy-on-whatsapp-modal";
+import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import { ShareButton } from "@/components/storefront/share-button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductView } from "@/actions/product";
@@ -178,6 +179,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
               })),
             }}
             initialAccount={customerAccount}
+          />
+
+          <AddToCartButton
+            product={{
+              id: product.id,
+              name: product.name,
+              slug: product.slug,
+              sku: product.sku,
+              price,
+              salePrice,
+              stock: product.stock,
+              featuredImage: product.featuredImage,
+              colors: product.colors,
+              sizes: product.sizes,
+              variants: product.variants.map((v) => ({
+                id: v.id,
+                color: v.color,
+                size: v.size,
+                quantity: v.quantity,
+                priceAdjustment: Number(v.priceAdjustment),
+                sku: v.sku,
+              })),
+            }}
           />
 
           <div className="space-y-2 border-t border-border pt-5 text-sm">

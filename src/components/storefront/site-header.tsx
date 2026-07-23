@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, MessageCircle, User } from "lucide-react";
+import { Menu, X, MessageCircle, User, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/components/storefront/cart-context";
 
 const navLinks = [
   { href: "/shop", label: "Shop" },
@@ -22,6 +23,7 @@ export function SiteHeader({
   logo?: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const { itemCount } = useCart();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
@@ -65,6 +67,18 @@ export function SiteHeader({
           >
             <User className="h-5 w-5" />
           </Link>
+          <Link
+            href="/cart"
+            className="relative rounded-full p-2 text-foreground/80 hover:bg-secondary hover:text-foreground"
+            aria-label="Cart"
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {itemCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-data text-[10px] text-accent-foreground">
+                {itemCount}
+              </span>
+            )}
+          </Link>
           <Button asChild size="sm">
             <Link href="/shop">Shop Now</Link>
           </Button>
@@ -97,6 +111,13 @@ export function SiteHeader({
             onClick={() => setOpen(false)}
           >
             My Account
+          </Link>
+          <Link
+            href="/cart"
+            className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary"
+            onClick={() => setOpen(false)}
+          >
+            Cart{itemCount > 0 ? ` (${itemCount})` : ""}
           </Link>
         </nav>
       )}

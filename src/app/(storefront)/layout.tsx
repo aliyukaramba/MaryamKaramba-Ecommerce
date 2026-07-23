@@ -1,5 +1,6 @@
 import { SiteHeader } from "@/components/storefront/site-header";
 import { SiteFooter } from "@/components/storefront/site-footer";
+import { CartProvider } from "@/components/storefront/cart-context";
 import { getBusinessSettings } from "@/lib/get-business-settings";
 
 export default async function StorefrontLayout({
@@ -10,18 +11,20 @@ export default async function StorefrontLayout({
   const settings = await getBusinessSettings();
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader businessName={settings.businessName} logo={settings.logo} />
-      <main className="flex-1">{children}</main>
-      <SiteFooter
-        businessName={settings.businessName}
-        logo={settings.logo}
-        address={settings.address}
-        businessEmail={settings.businessEmail}
-        facebookUrl={settings.facebookUrl}
-        instagramUrl={settings.instagramUrl}
-        twitterUrl={settings.twitterUrl}
-      />
-    </div>
+    <CartProvider>
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader businessName={settings.businessName} logo={settings.logo} />
+        <main className="flex-1">{children}</main>
+        <SiteFooter
+          businessName={settings.businessName}
+          logo={settings.logo}
+          address={settings.address}
+          businessEmail={settings.businessEmail}
+          facebookUrl={settings.facebookUrl}
+          instagramUrl={settings.instagramUrl}
+          twitterUrl={settings.twitterUrl}
+        />
+      </div>
+    </CartProvider>
   );
 }

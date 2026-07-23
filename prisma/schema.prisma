@@ -40,6 +40,26 @@ enum InquiryStatus {
   RETURNED
 }
 
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  // Payment was confirmed by the provider, but stock ran out between
+  // checkout initiation and payment confirmation. Requires manual admin
+  // resolution (fulfil from restock, substitute, or refund) — this state
+  // exists so money is never silently "lost" between systems.
+  PAYMENT_STOCK_CONFLICT
+}
+
+enum PaymentProvider {
+  TOPIFY
+}
+
+
 enum StockMovementType {
   RESTOCK
   SALE
@@ -195,6 +215,7 @@ model Product {
   variants      ProductVariant[]
   inventoryLogs Inventory[]
   inquiryItems  InquiryItem[]
+  orderItems    OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -221,6 +242,7 @@ model ProductVariant {
 
   product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   inquiryItems InquiryItem[]
+  orderItems   OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -260,6 +282,7 @@ model CustomerAccount {
 
   customers   Customer[]
   pushTokens  PushToken[]
+  orders      Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -456,4 +479,82 @@ model PushToken {
 
   @@index([customerAccountId])
   @@map("push_tokens")
+}
+
+// ============================================================================
+// PAID ORDERS (cart + Topify checkout) — deliberately separate from
+// Inquiry/InquiryItem, which model the WhatsApp-confirmed, no-payment flow.
+// An Order represents money that has actually moved (or is expected to).
+// ============================================================================
+
+model Order {
+  id          String  @id @default(cuid())
+  orderNumber String  @unique
+
+  // Guest checkout is supported here too, same snapshot pattern as
+  // Customer/Inquiry: these fields capture exactly what was entered at
+  // checkout time, independent of whether an account is linked.
+  fullName        String
+  phone           String
+  email           String
+  deliveryCity    String
+  deliveryAddress String?
+  notes           String? @db.Text
+
+  customerAccountId String?
+  customerAccount   CustomerAccount? @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
+
+  status   OrderStatus @default(PENDING_PAYMENT)
+  subtotal Decimal     @db.Decimal(12, 2)
+  total    Decimal     @db.Decimal(12, 2)
+  currency String      @default("NGN")
+
+  paymentProvider  PaymentProvider @default(TOPIFY)
+  paymentReference String          @unique
+  // Topify's access_code from /checkout/initialize — needed to re-check
+  // status or re-open the popup if the customer navigates away mid-payment.
+  providerAccessCode String?
+  // Raw status string as last reported by Topify (e.g. "success",
+  // "failed", "abandoned") — kept for support/debugging, not used for
+  // authoritative logic (OrderStatus is what the rest of the app reads).
+  providerRawStatus String?
+  paidAt            DateTime?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phone])
+  @@index([customerAccountId])
+  @@index([paymentReference])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+
+  // Snapshot fields — same reasoning as InquiryItem: an order's line
+  // items must keep showing exactly what was purchased even if the
+  // product/variant is later renamed, repriced, or archived.
+  productName String
+  sku         String
+  color       String?
+  size        String?
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(12, 2)
+  totalPrice  Decimal @db.Decimal(12, 2)
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
 }
