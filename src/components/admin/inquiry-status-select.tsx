@@ -21,6 +21,7 @@ const STATUSES: InquiryStatus[] = [
   "PACKING",
   "SHIPPED",
   "DELIVERED",
+  "COMPLETED",
   "CANCELLED",
   "RETURNED",
 ];

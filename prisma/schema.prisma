@@ -36,6 +36,10 @@ enum InquiryStatus {
   PACKING
   SHIPPED
   DELIVERED
+  // Customer-confirmed receipt, distinct from DELIVERED (which the
+  // admin sets). Only reachable from DELIVERED, and only by the
+  // customer who placed the order — this is what unlocks reviews.
+  COMPLETED
   CANCELLED
   RETURNED
 }
@@ -205,6 +209,12 @@ model Product {
   clickCount   Int @default(0)
   contactCount Int @default(0)
 
+  // Denormalized for fast product-card/listing reads — recomputed from
+  // Review rows every time a review is submitted or edited, never
+  // written to directly from anywhere else.
+  averageRating Float? // null until the product has at least one review
+  reviewCount   Int    @default(0)
+
   seoTitle       String?
   seoDescription String? @db.Text
   seoKeywords    String[] @default([])
@@ -216,6 +226,7 @@ model Product {
   inventoryLogs Inventory[]
   inquiryItems  InquiryItem[]
   orderItems    OrderItem[]
+  reviews       Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -283,6 +294,7 @@ model CustomerAccount {
   customers   Customer[]
   pushTokens  PushToken[]
   orders      Order[]
+  reviews     Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -330,6 +342,7 @@ model Inquiry {
 
   customer Customer      @relation(fields: [customerId], references: [id])
   items    InquiryItem[]
+  reviews  Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -557,4 +570,36 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+// ============================================================================
+// PRODUCT REVIEWS — only reachable once an Inquiry has reached COMPLETED
+// (customer-confirmed delivery). Reviews require a CustomerAccount, since
+// enforcing "one review per order per product, editable" needs a
+// persistent identity to key off — a guest inquiry has no such identity.
+// ============================================================================
+
+model Review {
+  id         String @id @default(cuid())
+  productId  String
+  inquiryId  String
+  rating     Int // 1-5
+  reviewText String @db.Text
+
+  customerAccountId String
+  customerAccount   CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One review per product per order — submitting again with the same
+  // pair updates the existing review (see actions/review.ts) rather than
+  // creating a duplicate.
+  @@unique([inquiryId, productId])
+  @@index([productId])
+  @@index([customerAccountId])
+  @@map("reviews")
 }

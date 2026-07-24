@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ProductGallery } from "@/components/storefront/product-gallery";
-import { BuyOnWhatsAppModal } from "@/components/storefront/buy-on-whatsapp-modal";
-import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
+import { ProductPurchaseActions } from "@/components/storefront/product-purchase-actions";
 import { ShareButton } from "@/components/storefront/share-button";
 import { ProductCard } from "@/components/storefront/product-card";
 import { incrementProductView } from "@/actions/product";
-import { getCurrentCustomerAccount } from "@/actions/customer-auth";
+import { StarRatingDisplay } from "@/components/storefront/star-rating-display";
+import { ProductReviewsSection } from "@/components/storefront/product-reviews-section";
 
 export const dynamic = "force-dynamic";
 
@@ -63,17 +63,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   incrementProductView(product.id).catch(() => {});
 
-  const [related, customerAccount] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        status: "PUBLISHED",
-        categoryId: product.categoryId,
-        NOT: { id: product.id },
-      },
-      take: 4,
-    }),
-    getCurrentCustomerAccount(),
-  ]);
+  const related = await prisma.product.findMany({
+    where: {
+      status: "PUBLISHED",
+      categoryId: product.categoryId,
+      NOT: { id: product.id },
+    },
+    take: 4,
+  });
 
   const price = Number(product.price);
   const salePrice = product.salePrice != null ? Number(product.salePrice) : null;
@@ -100,6 +97,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
     },
+    ...(product.reviewCount > 0 && product.averageRating != null
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.averageRating,
+            reviewCount: product.reviewCount,
+          },
+        }
+      : {}),
   };
 
   return (
@@ -139,6 +145,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
             />
           </div>
 
+          {product.reviewCount > 0 && product.averageRating != null && (
+            <div className="flex items-center gap-2">
+              <StarRatingDisplay rating={product.averageRating} size="sm" />
+              <span className="text-sm text-muted-foreground">
+                {product.averageRating.toFixed(1)} ({product.reviewCount} review
+                {product.reviewCount === 1 ? "" : "s"})
+              </span>
+            </div>
+          )}
+
           {product.brand && (
             <p className="text-sm text-muted-foreground">Brand: {product.brand}</p>
           )}
@@ -158,30 +174,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <p className="text-muted-foreground">{product.shortDescription}</p>
           )}
 
-          <BuyOnWhatsAppModal
-            product={{
-              id: product.id,
-              name: product.name,
-              slug: product.slug,
-              sku: product.sku,
-              price,
-              salePrice,
-              stock: product.stock,
-              colors: product.colors,
-              sizes: product.sizes,
-              variants: product.variants.map((v) => ({
-                id: v.id,
-                color: v.color,
-                size: v.size,
-                quantity: v.quantity,
-                priceAdjustment: Number(v.priceAdjustment),
-                sku: v.sku,
-              })),
-            }}
-            initialAccount={customerAccount}
-          />
-
-          <AddToCartButton
+          <ProductPurchaseActions
             product={{
               id: product.id,
               name: product.name,
@@ -222,6 +215,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       </div>
+
+      <ProductReviewsSection
+        productId={product.id}
+        averageRating={product.averageRating}
+        reviewCount={product.reviewCount}
+      />
 
       {related.length > 0 && (
         <section className="mt-16 border-t border-border pt-10">
