@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,10 +17,64 @@ import {
   type CustomerRegisterValues,
 } from "@/lib/validations/customer-auth";
 
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  google_not_configured: "Google sign-in isn't set up yet. Please use phone and password.",
+  google_auth_failed: "Google sign-in didn't complete. Please try again.",
+  google_email_unverified: "Your Google account's email isn't verified. Please use phone and password.",
+};
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47a5.53 5.53 0 0 1-2.4 3.63v3.02h3.88c2.27-2.09 3.57-5.17 3.57-8.84Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.88-3.02c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.12A12 12 0 0 0 12 24Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.61H1.27a12 12 0 0 0 0 10.78l4-3.12Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.27 6.61l4 3.12C6.22 6.87 8.87 4.75 12 4.75Z"
+      />
+    </svg>
+  );
+}
+
+function GoogleSignInButton({ next = "/account" }: { next?: string }) {
+  return (
+    <Button variant="outline" size="lg" className="w-full gap-3" asChild>
+      <a href={`/api/auth/google/start?next=${encodeURIComponent(next)}`}>
+        <GoogleIcon />
+        Continue with Google
+      </a>
+    </Button>
+  );
+}
+
+function useGoogleAuthErrorToast() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error) {
+      toast.error(GOOGLE_ERROR_MESSAGES[error] ?? "Something went wrong signing in with Google.");
+      params.delete("error");
+      const query = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
+    }
+  }, []);
+}
+
 type Mode = "login" | "register";
 
 export function AccountAuthPanel() {
   const [mode, setMode] = useState<Mode>("login");
+  useGoogleAuthErrorToast();
 
   return (
     <div className="mx-auto max-w-sm space-y-6">
@@ -33,6 +87,14 @@ export function AccountAuthPanel() {
             ? "See your past orders and skip retyping your details next time."
             : "Save your details so future orders are faster."}
         </p>
+      </div>
+
+      <GoogleSignInButton />
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or use your phone number</span>
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       {mode === "login" ? <LoginForm /> : <RegisterForm />}

@@ -129,6 +129,13 @@ export async function loginCustomerAccount(
       return { success: false, error: genericError };
     }
 
+    if (!account.password) {
+      // This account was created via Google and never set a password —
+      // same generic message, so this doesn't leak which accounts are
+      // Google-only vs phone/password.
+      return { success: false, error: genericError };
+    }
+
     const isValid = await bcrypt.compare(parsed.data.password, account.password);
     if (!isValid) {
       return { success: false, error: genericError };
@@ -151,7 +158,7 @@ export async function logoutCustomerAccount(): Promise<{ success: boolean }> {
 export interface CurrentCustomerAccount {
   id: string;
   fullName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   // Best-effort prefill from their most recent order, if any — the
   // account itself doesn't store a delivery address, since that can
@@ -194,4 +201,51 @@ export async function getCurrentCustomerAccount(): Promise<CurrentCustomerAccoun
     console.error("getCurrentCustomerAccount failed:", error);
     return null;
   }
+}
+
+/**
+ * Called only from the Google OAuth callback route handler (not exposed
+ * as a client-callable action in practice, since it requires an
+ * already-verified Google profile, but export it as a plain function
+ * since that route needs to call it as a normal server-side function).
+ *
+ * Links to an existing account by verified email if one exists —
+ * otherwise a customer who registered with phone+password using the
+ * same email, then later tries "Continue with Google", would end up
+ * with two separate accounts and a split order history. Creates a new
+ * account only when no match is found.
+ */
+export async function upsertGoogleCustomerAccount(profile: {
+  googleId: string;
+  email: string;
+  fullName: string;
+}): Promise<{ accountId: string }> {
+  const existingByGoogleId = await prisma.customerAccount.findUnique({
+    where: { googleId: profile.googleId },
+  });
+  if (existingByGoogleId) {
+    return { accountId: existingByGoogleId.id };
+  }
+
+  const existingByEmail = await prisma.customerAccount.findUnique({
+    where: { email: profile.email },
+  });
+  if (existingByEmail) {
+    const updated = await prisma.customerAccount.update({
+      where: { id: existingByEmail.id },
+      data: { googleId: profile.googleId },
+    });
+    return { accountId: updated.id };
+  }
+
+  const created = await prisma.customerAccount.create({
+    data: {
+      googleId: profile.googleId,
+      email: profile.email,
+      fullName: sanitizeText(profile.fullName),
+      // phone and password stay null until the customer sets one —
+      // enforced as optional at the schema level for exactly this case.
+    },
+  });
+  return { accountId: created.id };
 }

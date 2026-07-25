@@ -286,10 +286,15 @@ model Inventory {
 
 model CustomerAccount {
   id       String  @id @default(cuid())
-  phone    String  @unique
+  // Optional now: a Google-signed-up account has neither a phone nor a
+  // password until the customer provides one (e.g. at checkout, or by
+  // setting a password later). Phone+password accounts always have both;
+  // enforced at the application layer in customer-auth actions, not here.
+  phone    String? @unique
   email    String? @unique
   fullName String
-  password String
+  password String?
+  googleId String? @unique
 
   customers   Customer[]
   pushTokens  PushToken[]

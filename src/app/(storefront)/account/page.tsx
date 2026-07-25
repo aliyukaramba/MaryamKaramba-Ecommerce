@@ -35,7 +35,8 @@ export default async function AccountPage() {
         <div>
           <h1 className="font-display text-3xl">My Orders</h1>
           <p className="text-sm text-muted-foreground">
-            Signed in as {account.fullName} ({account.phone})
+            Signed in as {account.fullName}
+            {account.phone ? ` (${account.phone})` : ""}
           </p>
         </div>
         <AccountLogoutButton />
