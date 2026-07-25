@@ -50,6 +50,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptError, setScriptError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -58,6 +59,19 @@ export default function CheckoutPage() {
     reset,
     formState: { errors },
   } = useForm<CheckoutFormValues>({ resolver: zodResolver(checkoutFormSchema) });
+
+  // next/script's onLoad only fires the FIRST time a given src is ever
+  // loaded in the browser session — if the customer already visited
+  // checkout once (script loaded then), left, and came back, the
+  // <script> tag is still in the page but onLoad will never fire again
+  // for this fresh component instance. Checking window.TopifyPop
+  // directly on mount catches that case immediately instead of waiting
+  // forever for an event that isn't coming.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.TopifyPop) {
+      setScriptLoaded(true);
+    }
+  }, []);
 
   useEffect(() => {
     getCurrentCustomerAccount().then((account) => {
@@ -157,6 +171,7 @@ export default function CheckoutPage() {
       <Script
         src="https://js.topify.ng/inline.js"
         onLoad={() => setScriptLoaded(true)}
+        onError={() => setScriptError(true)}
         strategy="afterInteractive"
       />
 
@@ -207,10 +222,27 @@ export default function CheckoutPage() {
           <span className="font-data text-lg font-semibold">{formatCurrency(subtotal)}</span>
         </div>
 
-        <Button type="submit" size="lg" className="w-full" disabled={submitting || !scriptLoaded}>
-          {submitting && <Loader2 className="h-5 w-5 animate-spin" />}
-          {!scriptLoaded ? "Loading payment…" : submitting ? "Processing…" : "Pay Now"}
-        </Button>
+        {scriptError ? (
+          <div className="space-y-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            <p className="text-destructive">
+              We couldn&apos;t load the payment provider. This is usually a network issue or an
+              ad/tracker blocker — try disabling it for this site, or refresh the page.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              Reload page
+            </Button>
+          </div>
+        ) : (
+          <Button type="submit" size="lg" className="w-full" disabled={submitting || !scriptLoaded}>
+            {submitting && <Loader2 className="h-5 w-5 animate-spin" />}
+            {!scriptLoaded ? "Loading payment…" : submitting ? "Processing…" : "Pay Now"}
+          </Button>
+        )}
       </form>
     </div>
   );

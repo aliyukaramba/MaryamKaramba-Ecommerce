@@ -5,6 +5,7 @@ import {
   Users,
   AlertTriangle,
   TrendingUp,
+  CreditCard,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -28,6 +29,7 @@ async function getDashboardData() {
     recentProducts,
     inquiriesLast30Days,
     revenueAgg,
+    orderRevenueAgg,
   ] = await Promise.all([
     prisma.product.count({ where: { status: "PUBLISHED" } }),
     prisma.inquiry.count(),
@@ -56,6 +58,10 @@ async function getDashboardData() {
       where: { status: "DELIVERED" },
       _sum: { totalAmount: true },
     }),
+    prisma.order.aggregate({
+      where: { status: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"] } },
+      _sum: { total: true },
+    }),
   ]);
 
   const lowStockProducts = publishedProductsForStockCheck
@@ -82,6 +88,7 @@ async function getDashboardData() {
     recentProducts,
     chartData,
     totalRevenue: Number(revenueAgg._sum.totalAmount ?? 0),
+    orderRevenue: Number(orderRevenueAgg._sum.total ?? 0),
   };
 }
 
@@ -92,7 +99,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <h1 className="font-display text-3xl">Dashboard</h1>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Published Products" value={String(data.productCount)} icon={Package} />
         <StatCard label="Total Inquiries" value={String(data.inquiryCount)} icon={MessagesSquare} accent />
         <StatCard label="Customers" value={String(data.customerCount)} icon={Users} />
@@ -100,6 +107,11 @@ export default async function AdminDashboardPage() {
           label="Delivered Order Value"
           value={formatCurrency(data.totalRevenue)}
           icon={TrendingUp}
+        />
+        <StatCard
+          label="Paid Order Revenue"
+          value={formatCurrency(data.orderRevenue)}
+          icon={CreditCard}
         />
       </div>
 
