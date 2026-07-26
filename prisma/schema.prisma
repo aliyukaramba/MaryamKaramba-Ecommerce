@@ -96,7 +96,11 @@ model User {
   image         String?
   isActive      Boolean   @default(true)
 
-  resetToken       String?
+  // Stores SHA-256(token), never the raw token — see CustomerAccount for
+  // the same reasoning; this was previously storing the raw token
+  // directly, which meant a database compromise alone (no email access
+  // needed) would be enough to reset any admin's password.
+  resetTokenHash   String?
   resetTokenExpiry DateTime?
 
   createdAt DateTime @default(now())
@@ -286,10 +290,22 @@ model Inventory {
 
 model CustomerAccount {
   id       String  @id @default(cuid())
-  phone    String  @unique
+  // Optional now: a Google-signed-up account has neither a phone nor a
+  // password until the customer provides one (e.g. at checkout, or by
+  // setting a password later). Phone+password accounts always have both;
+  // enforced at the application layer in customer-auth actions, not here.
+  phone    String? @unique
   email    String? @unique
   fullName String
-  password String
+  password String?
+  googleId String? @unique
+
+  // Stores SHA-256(token), never the raw token — the raw token only
+  // ever exists in the emailed link and the customer's browser. If the
+  // database were ever exposed, these hashes alone can't be used to
+  // reset anyone's password.
+  resetTokenHash   String?
+  resetTokenExpiry DateTime?
 
   customers   Customer[]
   pushTokens  PushToken[]

@@ -78,7 +78,7 @@ export default function CheckoutPage() {
       if (account) {
         reset({
           fullName: account.fullName,
-          phone: account.phone,
+          phone: account.phone ?? "",
           email: account.email ?? "",
           deliveryCity: account.lastDeliveryCity ?? "",
           deliveryAddress: account.lastDeliveryAddress ?? "",

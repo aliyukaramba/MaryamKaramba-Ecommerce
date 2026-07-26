@@ -1,23 +1,23 @@
 import { z } from "zod";
+import { strongPasswordSchema } from "@/lib/validations/password-policy";
 
 export const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Enter a valid email address").toLowerCase().trim(),
+  // Deliberately NOT the strong password policy here — this schema
+  // verifies an EXISTING credential against bcrypt, it doesn't set a new
+  // one. Enforcing today's complexity rules on login would lock out
+  // legitimate accounts created under an earlier, weaker policy.
+  password: z.string().min(1, "Enter your password"),
 });
 
 export const requestPasswordResetSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: z.string().email("Enter a valid email address").toLowerCase().trim(),
 });
 
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain an uppercase letter")
-      .regex(/[a-z]/, "Password must contain a lowercase letter")
-      .regex(/[0-9]/, "Password must contain a number"),
+    password: strongPasswordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

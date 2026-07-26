@@ -20,7 +20,14 @@ export const authConfig: NextAuthConfig = {
     signIn: "/admin/login",
     error: "/admin/login",
   },
-  session: { strategy: "jwt" },
+  // 8 hours, not NextAuth's 30-day default. JWT sessions are stateless —
+  // once issued, nothing re-checks the database on subsequent requests,
+  // so deactivating an admin account (or a full password reset) doesn't
+  // revoke a session that's already out in the world. A short maxAge is
+  // the practical bound on that exposure window without adding a
+  // server-side session store. See SECURITY_AUDIT.md for the fuller
+  // tradeoff discussion and what a complete fix would look like.
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   providers: [], // populated with Credentials in auth.ts (Node runtime only)
   callbacks: {
     async jwt({ token, user }) {

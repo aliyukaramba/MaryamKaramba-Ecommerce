@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, UnauthorizedError, ForbiddenError } from "@/lib/auth-guard";
 import { logActivity } from "@/lib/activity-log";
 import { sanitizeText } from "@/lib/sanitize";
+import { strongPasswordSchema } from "@/lib/validations/password-policy";
 
 function handleActionError(error: unknown) {
   if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
@@ -18,12 +19,8 @@ function handleActionError(error: unknown) {
 
 const createUserSchema = z.object({
   name: z.string().min(2).max(100),
-  email: z.string().email(),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Must contain an uppercase letter")
-    .regex(/[0-9]/, "Must contain a number"),
+  email: z.string().email().toLowerCase().trim(),
+  password: strongPasswordSchema,
   role: z.enum(["SUPER_ADMIN", "ADMIN", "STAFF"]),
 });
 

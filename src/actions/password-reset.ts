@@ -1,11 +1,11 @@
 "use server";
 
-import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity-log";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { hashResetToken, generateResetToken } from "@/lib/reset-token";
 import {
   requestPasswordResetSchema,
   resetPasswordSchema,
@@ -52,12 +52,14 @@ export async function requestPasswordReset(
     });
 
     if (user && user.isActive) {
-      const token = crypto.randomBytes(32).toString("hex");
+      const rawToken = generateResetToken();
       const expiry = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
 
+      // Only the HASH is stored — the raw token exists only in the
+      // emailed link and the recipient's browser.
       await prisma.user.update({
         where: { id: user.id },
-        data: { resetToken: token, resetTokenExpiry: expiry },
+        data: { resetTokenHash: hashResetToken(rawToken), resetTokenExpiry: expiry },
       });
 
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -65,7 +67,7 @@ export async function requestPasswordReset(
 
       await sendPasswordResetEmail(user.email, {
         businessName: businessSettings?.businessName ?? "Your Store",
-        resetUrl: `${siteUrl}/admin/reset-password?token=${token}`,
+        resetUrl: `${siteUrl}/admin/reset-password?token=${rawToken}`,
         expiresInMinutes: RESET_TOKEN_TTL_MINUTES,
       });
 
@@ -102,8 +104,10 @@ export async function resetPassword(input: {
       };
     }
 
+    const tokenHash = hashResetToken(parsed.data.token);
+
     const user = await prisma.user.findFirst({
-      where: { resetToken: parsed.data.token },
+      where: { resetTokenHash: tokenHash },
     });
 
     if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
@@ -119,7 +123,7 @@ export async function resetPassword(input: {
       where: { id: user.id },
       data: {
         password: hashedPassword,
-        resetToken: null,
+        resetTokenHash: null,
         resetTokenExpiry: null,
       },
     });

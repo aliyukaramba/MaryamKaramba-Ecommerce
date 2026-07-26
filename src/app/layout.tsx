@@ -4,6 +4,7 @@ import { Newsreader, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { prisma } from "@/lib/prisma";
 import { CapacitorBridge } from "@/components/capacitor-bridge";
+import { safeJsonLd } from "@/lib/safe-json-ld";
 import "./globals.css";
 
 const display = Newsreader({
@@ -84,7 +85,7 @@ export default async function RootLayout({
         {/* eslint-disable-next-line react/no-danger */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(organizationJsonLd) }}
         />
         {children}
         <Toaster position="top-center" richColors closeButton />
